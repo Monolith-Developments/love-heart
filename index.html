@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Love Heart</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ff204e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Symmetrical stage container with responsive auto-fit scaling */
+    #heartStage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 960px;
+      height: 720px;
+      transform: translate(-50%, -50%) scale(var(--scale, 1));
+      transform-origin: center center;
+      pointer-events: none;
+    }
+
+    .word {
+      position: absolute;
+      white-space: nowrap;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: #ff204e;
+      text-shadow:
+        0 0 3px rgba(255, 32, 78, 0.85),
+        0 0 8px rgba(255, 32, 78, 0.45);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.35);
+      transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+      will-change: transform, opacity;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .word.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Gentle pulsing after the drawing completes */
+    .heart-pulsing {
+      animation: heartbeat 2s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% {
+        transform: translate(-50%, -50%) scale(var(--scale, 1));
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.025));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Heart Stage Container -->
+  <div id="heartStage"></div>
+
+  <!-- Background Music from Reel -->
+  <audio id="bgMusic" src="reel_audio.mp3" preload="auto" loop autoplay></audio>
+
+  <script>
+    const WORDS_DATA = [{"text": "Σ' αγαπώ", "x": 623, "y": 55, "group": "top-right", "row": 0}, {"text": "Te amo", "x": 763, "y": 55, "group": "top-right", "row": 0}, {"text": "Anh yêu em", "x": 606, "y": 81, "group": "top-right", "row": 1}, {"text": "Ik hou van jou", "x": 708, "y": 81, "group": "top-right", "row": 1}, {"text": "사랑해", "x": 811, "y": 81, "group": "top-right", "row": 1}, {"text": "Seni seviyorum", "x": 600, "y": 107, "group": "top-right", "row": 2}, {"text": "Ti amo", "x": 723, "y": 107, "group": "top-right", "row": 2}, {"text": "사랑해", "x": 846, "y": 107, "group": "top-right", "row": 2}, {"text": "Ich liebe dich", "x": 579, "y": 133, "group": "top-right", "row": 3}, {"text": "Я тебе кохаю", "x": 715, "y": 133, "group": "top-right", "row": 3}, {"text": "ฉันรักเธอ", "x": 852, "y": 133, "group": "top-right", "row": 3}, {"text": "Te amo", "x": 542, "y": 159, "group": "top-right", "row": 4}, {"text": "Ik hou van jou", "x": 658, "y": 159, "group": "top-right", "row": 4}, {"text": "Seni seviyorum", "x": 774, "y": 159, "group": "top-right", "row": 4}, {"text": "أحبك", "x": 891, "y": 159, "group": "top-right", "row": 4}, {"text": "Я тебя люблю", "x": 552, "y": 185, "group": "top-right", "row": 5}, {"text": "Te amo", "x": 667, "y": 185, "group": "top-right", "row": 5}, {"text": "Seni seviyorum", "x": 781, "y": 185, "group": "top-right", "row": 5}, {"text": "我爱你", "x": 896, "y": 185, "group": "top-right", "row": 5}, {"text": "Ich liebe dich", "x": 219, "y": 55, "group": "top-left", "row": 0}, {"text": "أحبك", "x": 351, "y": 55, "group": "top-left", "row": 0}, {"text": "愛してる", "x": 156, "y": 81, "group": "top-left", "row": 1}, {"text": "Aku cinta kamu", "x": 266, "y": 81, "group": "top-left", "row": 1}, {"text": "بحبك", "x": 376, "y": 81, "group": "top-left", "row": 1}, {"text": "ฉันรักเธอ", "x": 134, "y": 107, "group": "top-left", "row": 2}, {"text": "Te amo", "x": 257, "y": 107, "group": "top-left", "row": 2}, {"text": "أنا أحبك", "x": 381, "y": 107, "group": "top-left", "row": 2}, {"text": "Jag älskar dig", "x": 117, "y": 133, "group": "top-left", "row": 3}, {"text": "أعشقك", "x": 262, "y": 133, "group": "top-left", "row": 3}, {"text": "我爱你", "x": 406, "y": 133, "group": "top-left", "row": 3}, {"text": "Kocham cię", "x": 91, "y": 159, "group": "top-left", "row": 4}, {"text": "Eu te amo", "x": 200, "y": 159, "group": "top-left", "row": 4}, {"text": "بحبك", "x": 310, "y": 159, "group": "top-left", "row": 4}, {"text": "Ti amo", "x": 420, "y": 159, "group": "top-left", "row": 4}, {"text": "Я тебя люблю", "x": 87, "y": 185, "group": "top-left", "row": 5}, {"text": "Eu te amo", "x": 198, "y": 185, "group": "top-left", "row": 5}, {"text": "أنا أحبك", "x": 308, "y": 185, "group": "top-left", "row": 5}, {"text": "I love you", "x": 419, "y": 185, "group": "top-left", "row": 5}, {"text": "ฉันรักเธอ", "x": 84, "y": 211, "group": "bottom", "row": 6}, {"text": "Eu te amo", "x": 884, "y": 211, "group": "bottom", "row": 6}, {"text": "사랑해", "x": 69, "y": 237, "group": "bottom", "row": 7}, {"text": "Ich liebe dich", "x": 866, "y": 237, "group": "bottom", "row": 7}, {"text": "Я тебе кохаю", "x": 107, "y": 263, "group": "bottom", "row": 8}, {"text": "Jag älskar dig", "x": 848, "y": 263, "group": "bottom", "row": 8}, {"text": "Je t'aime", "x": 116, "y": 289, "group": "bottom", "row": 9}, {"text": "Aku cinta kamu", "x": 826, "y": 289, "group": "bottom", "row": 9}, {"text": "Σ' αγαπώ", "x": 138, "y": 315, "group": "bottom", "row": 10}, {"text": "ฉันรักเธอ", "x": 812, "y": 315, "group": "bottom", "row": 10}, {"text": "Te amo", "x": 162, "y": 341, "group": "bottom", "row": 11}, {"text": "Seni seviyorum", "x": 770, "y": 341, "group": "bottom", "row": 11}, {"text": "사랑해", "x": 194, "y": 367, "group": "bottom", "row": 12}, {"text": "Eu te amo", "x": 754, "y": 367, "group": "bottom", "row": 12}, {"text": "사랑해", "x": 234, "y": 393, "group": "bottom", "row": 13}, {"text": "愛してる", "x": 719, "y": 393, "group": "bottom", "row": 13}, {"text": "Я тебе кохаю", "x": 297, "y": 419, "group": "bottom", "row": 14}, {"text": "Kocham cię", "x": 669, "y": 419, "group": "bottom", "row": 14}, {"text": "Ti amo", "x": 315, "y": 445, "group": "bottom", "row": 15}, {"text": "Anh yêu em", "x": 629, "y": 445, "group": "bottom", "row": 15}, {"text": "Kocham cię", "x": 366, "y": 471, "group": "bottom", "row": 16}, {"text": "Te amo", "x": 608, "y": 471, "group": "bottom", "row": 16}, {"text": "Ik hou van jou", "x": 406, "y": 497, "group": "bottom", "row": 17}, {"text": "Anh yêu em", "x": 564, "y": 497, "group": "bottom", "row": 17}, {"text": "أحبك", "x": 404, "y": 523, "group": "bottom", "row": 18}, {"text": "بحبك", "x": 556, "y": 523, "group": "bottom", "row": 18}, {"text": "أعشقك", "x": 434, "y": 549, "group": "bottom", "row": 19}, {"text": "Te amo", "x": 523, "y": 549, "group": "bottom", "row": 19}, {"text": "أنا أحبك", "x": 480, "y": 575, "group": "bottom", "row": 20}, {"text": "أحبك", "x": 480, "y": 601, "group": "bottom", "row": 21}, {"text": "Ich liebe dich", "x": 198, "y": 211, "group": "bottom", "row": 6}, {"text": "أنا أحبك", "x": 312, "y": 211, "group": "bottom", "row": 6}, {"text": "Kocham cię", "x": 427, "y": 211, "group": "bottom", "row": 6}, {"text": "Ik hou van jou", "x": 541, "y": 211, "group": "bottom", "row": 6}, {"text": "أحبك", "x": 656, "y": 211, "group": "bottom", "row": 6}, {"text": "I love you", "x": 770, "y": 211, "group": "bottom", "row": 6}, {"text": "Я тебе кохаю", "x": 183, "y": 237, "group": "bottom", "row": 7}, {"text": "Ti amo", "x": 297, "y": 237, "group": "bottom", "row": 7}, {"text": "بحبك", "x": 410, "y": 237, "group": "bottom", "row": 7}, {"text": "Je t'aime", "x": 524, "y": 237, "group": "bottom", "row": 7}, {"text": "我爱你", "x": 638, "y": 237, "group": "bottom", "row": 7}, {"text": "Anh yêu em", "x": 752, "y": 237, "group": "bottom", "row": 7}, {"text": "Я тебя люблю", "x": 230, "y": 263, "group": "bottom", "row": 8}, {"text": "Je t'aime", "x": 354, "y": 263, "group": "bottom", "row": 8}, {"text": "أعشقك", "x": 478, "y": 263, "group": "bottom", "row": 8}, {"text": "Σ' αγαπώ", "x": 601, "y": 263, "group": "bottom", "row": 8}, {"text": "Ik hou van jou", "x": 724, "y": 263, "group": "bottom", "row": 8}, {"text": "Te amo", "x": 217, "y": 289, "group": "bottom", "row": 9}, {"text": "Σ' αγαπώ", "x": 319, "y": 289, "group": "bottom", "row": 9}, {"text": "愛してる", "x": 420, "y": 289, "group": "bottom", "row": 9}, {"text": "أنا أحبك", "x": 522, "y": 289, "group": "bottom", "row": 9}, {"text": "Ik hou van jou", "x": 623, "y": 289, "group": "bottom", "row": 9}, {"text": "بحبك", "x": 725, "y": 289, "group": "bottom", "row": 9}, {"text": "Jag älskar dig", "x": 250, "y": 315, "group": "bottom", "row": 10}, {"text": "I love you", "x": 362, "y": 315, "group": "bottom", "row": 10}, {"text": "بحبك", "x": 475, "y": 315, "group": "bottom", "row": 10}, {"text": "Te amo", "x": 587, "y": 315, "group": "bottom", "row": 10}, {"text": "Eu te amo", "x": 699, "y": 315, "group": "bottom", "row": 10}, {"text": "ฉันรักเธอ", "x": 263, "y": 341, "group": "bottom", "row": 11}, {"text": "I love you", "x": 364, "y": 341, "group": "bottom", "row": 11}, {"text": "أحبك", "x": 466, "y": 341, "group": "bottom", "row": 11}, {"text": "Je t'aime", "x": 567, "y": 341, "group": "bottom", "row": 11}, {"text": "Ti amo", "x": 669, "y": 341, "group": "bottom", "row": 11}, {"text": "Aku cinta kamu", "x": 306, "y": 367, "group": "bottom", "row": 12}, {"text": "Te amo", "x": 418, "y": 367, "group": "bottom", "row": 12}, {"text": "أعشقك", "x": 530, "y": 367, "group": "bottom", "row": 12}, {"text": "Σ' αγαπώ", "x": 642, "y": 367, "group": "bottom", "row": 12}, {"text": "Ti amo", "x": 355, "y": 393, "group": "bottom", "row": 13}, {"text": "أنا أحبك", "x": 476, "y": 393, "group": "bottom", "row": 13}, {"text": "Ich liebe dich", "x": 598, "y": 393, "group": "bottom", "row": 13}, {"text": "Eu te amo", "x": 421, "y": 419, "group": "bottom", "row": 14}, {"text": "بحبك", "x": 545, "y": 419, "group": "bottom", "row": 14}, {"text": "我爱你", "x": 420, "y": 445, "group": "bottom", "row": 15}, {"text": "أحبك", "x": 525, "y": 445, "group": "bottom", "row": 15}, {"text": "أنا أحبك", "x": 487, "y": 471, "group": "bottom", "row": 16}, {"text": "بحبك", "x": 485, "y": 497, "group": "bottom", "row": 17}, {"text": "Ti amo", "x": 480, "y": 523, "group": "bottom", "row": 18}];
+
+    const stage = document.getElementById("heartStage");
+    const audio = document.getElementById("bgMusic");
+
+    // Responsive scaling to fit any viewport
+    function updateScale() {
+      const scaleX = (window.innerWidth * 0.95) / 960;
+      const scaleY = (window.innerHeight * 0.95) / 720;
+      const scale = Math.min(scaleX, scaleY, 1.25);
+      stage.style.setProperty("--scale", scale);
+    }
+    window.addEventListener("resize", updateScale);
+    updateScale();
+
+    // Start audio immediately on load
+    function initAudio() {
+      if (!audio) return;
+      audio.play().catch(() => {
+        // Silent fallback for strict browser autoplay policies
+        const unlock = () => {
+          audio.play().catch(() => {});
+          window.removeEventListener("pointerdown", unlock);
+          window.removeEventListener("keydown", unlock);
+        };
+        window.addEventListener("pointerdown", unlock, { once: true });
+        window.addEventListener("keydown", unlock, { once: true });
+      });
+    }
+
+    // Create words and animate immediately on page load
+    function initHeart() {
+      stage.innerHTML = "";
+      stage.classList.remove("heart-pulsing");
+
+      const wordElements = [];
+
+      WORDS_DATA.forEach((item) => {
+        const span = document.createElement("span");
+        span.className = "word";
+        span.textContent = item.text;
+        span.style.left = item.x + "px";
+        span.style.top = item.y + "px";
+        stage.appendChild(span);
+        wordElements.push(span);
+      });
+
+      // Animate word by word sequentially (matching reel timing: ~75ms per word)
+      const delayPerWord = 75;
+      wordElements.forEach((el, index) => {
+        setTimeout(() => {
+          el.classList.add("visible");
+          if (index === wordElements.length - 1) {
+            setTimeout(() => {
+              stage.classList.add("heart-pulsing");
+            }, 300);
+          }
+        }, index * delayPerWord);
+      });
+    }
+
+    // Run automatically on load or immediately if already loaded
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", () => {
+        initAudio();
+        initHeart();
+      });
+    } else {
+      initAudio();
+      initHeart();
+    }
+  </script>
+</body>
+</html>

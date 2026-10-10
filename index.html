@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Love Heart</title>
   <style>
     * {
@@ -18,11 +22,19 @@
       color: #ff204e;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, "Helvetica Neue", Arial, sans-serif;
       overflow: hidden;
+      overscroll-behavior: none;
       width: 100vw;
       height: 100vh;
+      height: 100svh;
+      height: 100dvh;
       display: flex;
       justify-content: center;
       align-items: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
     /* Symmetrical stage container with responsive auto-fit scaling */
@@ -53,6 +65,7 @@
       will-change: transform, opacity;
       pointer-events: none;
       line-height: 1;
+      -webkit-font-smoothing: antialiased;
     }
 
     .word.visible {
@@ -73,6 +86,62 @@
         transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.025));
       }
     }
+
+    /* Tap-to-start overlay (required for audio on mobile) */
+    #tapOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      background: rgba(0, 0, 0, 0.88);
+      border: 0;
+      color: #ff204e;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 24px;
+      padding-top: calc(24px + env(safe-area-inset-top));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    #tapOverlay[hidden] { display: none; }
+    #tapOverlay .tap-heart { font-size: 52px; line-height: 1; animation: tapPulse 1.6s ease-in-out infinite; }
+    #tapOverlay .tap-title { font-size: 20px; font-weight: 800; letter-spacing: 0.3px; text-align: center; }
+    #tapOverlay .tap-error { font-size: 13px; font-weight: 600; color: #ffb3c1; text-align: center; max-width: 320px; }
+    @keyframes tapPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    /* Sound toggle */
+    #soundBtn {
+      position: fixed;
+      right: calc(14px + env(safe-area-inset-right));
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      z-index: 5;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 32, 78, 0.55);
+      background: rgba(0, 0, 0, 0.6);
+      color: #ff204e;
+      font-size: 22px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    #soundBtn[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -80,38 +149,109 @@
   <!-- Heart Stage Container -->
   <div id="heartStage"></div>
 
-  <!-- Background Music from Reel -->
-  <audio id="bgMusic" src="reel_audio.mp3" preload="auto" loop autoplay></audio>
+  <!-- Tap-to-start overlay: mobile browsers block audio before a user gesture -->
+  <button id="tapOverlay" type="button" aria-label="Click me">
+    <span class="tap-heart" aria-hidden="true">&#10084;&#65039;</span>
+    <span class="tap-title">click me</span>
+    <span class="tap-error" id="tapError" hidden></span>
+  </button>
+
+  <button id="soundBtn" type="button" aria-label="Toggle sound" hidden>&#9836;</button>
+
+  <!-- Background Music from Reel.
+       NOTE: the original reel file is an MP4 (AAC) container, not real MP3
+       bytes, so it is referenced here as .m4a (audio/mp4) for mobile Safari. -->
+  <audio id="bgMusic" preload="auto" loop playsinline webkit-playsinline>
+    <source src="reel_audio.m4a" type="audio/mp4">
+    <source src="reel_audio.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
     const WORDS_DATA = [{"text": "Σ' αγαπώ", "x": 623, "y": 55, "group": "top-right", "row": 0}, {"text": "Te amo", "x": 763, "y": 55, "group": "top-right", "row": 0}, {"text": "Anh yêu em", "x": 606, "y": 81, "group": "top-right", "row": 1}, {"text": "Ik hou van jou", "x": 708, "y": 81, "group": "top-right", "row": 1}, {"text": "사랑해", "x": 811, "y": 81, "group": "top-right", "row": 1}, {"text": "Seni seviyorum", "x": 600, "y": 107, "group": "top-right", "row": 2}, {"text": "Ti amo", "x": 723, "y": 107, "group": "top-right", "row": 2}, {"text": "사랑해", "x": 846, "y": 107, "group": "top-right", "row": 2}, {"text": "Ich liebe dich", "x": 579, "y": 133, "group": "top-right", "row": 3}, {"text": "Я тебе кохаю", "x": 715, "y": 133, "group": "top-right", "row": 3}, {"text": "ฉันรักเธอ", "x": 852, "y": 133, "group": "top-right", "row": 3}, {"text": "Te amo", "x": 542, "y": 159, "group": "top-right", "row": 4}, {"text": "Ik hou van jou", "x": 658, "y": 159, "group": "top-right", "row": 4}, {"text": "Seni seviyorum", "x": 774, "y": 159, "group": "top-right", "row": 4}, {"text": "أحبك", "x": 891, "y": 159, "group": "top-right", "row": 4}, {"text": "Я тебя люблю", "x": 552, "y": 185, "group": "top-right", "row": 5}, {"text": "Te amo", "x": 667, "y": 185, "group": "top-right", "row": 5}, {"text": "Seni seviyorum", "x": 781, "y": 185, "group": "top-right", "row": 5}, {"text": "我爱你", "x": 896, "y": 185, "group": "top-right", "row": 5}, {"text": "Ich liebe dich", "x": 219, "y": 55, "group": "top-left", "row": 0}, {"text": "أحبك", "x": 351, "y": 55, "group": "top-left", "row": 0}, {"text": "愛してる", "x": 156, "y": 81, "group": "top-left", "row": 1}, {"text": "Aku cinta kamu", "x": 266, "y": 81, "group": "top-left", "row": 1}, {"text": "بحبك", "x": 376, "y": 81, "group": "top-left", "row": 1}, {"text": "ฉันรักเธอ", "x": 134, "y": 107, "group": "top-left", "row": 2}, {"text": "Te amo", "x": 257, "y": 107, "group": "top-left", "row": 2}, {"text": "أنا أحبك", "x": 381, "y": 107, "group": "top-left", "row": 2}, {"text": "Jag älskar dig", "x": 117, "y": 133, "group": "top-left", "row": 3}, {"text": "أعشقك", "x": 262, "y": 133, "group": "top-left", "row": 3}, {"text": "我爱你", "x": 406, "y": 133, "group": "top-left", "row": 3}, {"text": "Kocham cię", "x": 91, "y": 159, "group": "top-left", "row": 4}, {"text": "Eu te amo", "x": 200, "y": 159, "group": "top-left", "row": 4}, {"text": "بحبك", "x": 310, "y": 159, "group": "top-left", "row": 4}, {"text": "Ti amo", "x": 420, "y": 159, "group": "top-left", "row": 4}, {"text": "Я тебя люблю", "x": 87, "y": 185, "group": "top-left", "row": 5}, {"text": "Eu te amo", "x": 198, "y": 185, "group": "top-left", "row": 5}, {"text": "أنا أحبك", "x": 308, "y": 185, "group": "top-left", "row": 5}, {"text": "I love you", "x": 419, "y": 185, "group": "top-left", "row": 5}, {"text": "ฉันรักเธอ", "x": 84, "y": 211, "group": "bottom", "row": 6}, {"text": "Eu te amo", "x": 884, "y": 211, "group": "bottom", "row": 6}, {"text": "사랑해", "x": 69, "y": 237, "group": "bottom", "row": 7}, {"text": "Ich liebe dich", "x": 866, "y": 237, "group": "bottom", "row": 7}, {"text": "Я тебе кохаю", "x": 107, "y": 263, "group": "bottom", "row": 8}, {"text": "Jag älskar dig", "x": 848, "y": 263, "group": "bottom", "row": 8}, {"text": "Je t'aime", "x": 116, "y": 289, "group": "bottom", "row": 9}, {"text": "Aku cinta kamu", "x": 826, "y": 289, "group": "bottom", "row": 9}, {"text": "Σ' αγαπώ", "x": 138, "y": 315, "group": "bottom", "row": 10}, {"text": "ฉันรักเธอ", "x": 812, "y": 315, "group": "bottom", "row": 10}, {"text": "Te amo", "x": 162, "y": 341, "group": "bottom", "row": 11}, {"text": "Seni seviyorum", "x": 770, "y": 341, "group": "bottom", "row": 11}, {"text": "사랑해", "x": 194, "y": 367, "group": "bottom", "row": 12}, {"text": "Eu te amo", "x": 754, "y": 367, "group": "bottom", "row": 12}, {"text": "사랑해", "x": 234, "y": 393, "group": "bottom", "row": 13}, {"text": "愛してる", "x": 719, "y": 393, "group": "bottom", "row": 13}, {"text": "Я тебе кохаю", "x": 297, "y": 419, "group": "bottom", "row": 14}, {"text": "Kocham cię", "x": 669, "y": 419, "group": "bottom", "row": 14}, {"text": "Ti amo", "x": 315, "y": 445, "group": "bottom", "row": 15}, {"text": "Anh yêu em", "x": 629, "y": 445, "group": "bottom", "row": 15}, {"text": "Kocham cię", "x": 366, "y": 471, "group": "bottom", "row": 16}, {"text": "Te amo", "x": 608, "y": 471, "group": "bottom", "row": 16}, {"text": "Ik hou van jou", "x": 406, "y": 497, "group": "bottom", "row": 17}, {"text": "Anh yêu em", "x": 564, "y": 497, "group": "bottom", "row": 17}, {"text": "أحبك", "x": 404, "y": 523, "group": "bottom", "row": 18}, {"text": "بحبك", "x": 556, "y": 523, "group": "bottom", "row": 18}, {"text": "أعشقك", "x": 434, "y": 549, "group": "bottom", "row": 19}, {"text": "Te amo", "x": 523, "y": 549, "group": "bottom", "row": 19}, {"text": "أنا أحبك", "x": 480, "y": 575, "group": "bottom", "row": 20}, {"text": "أحبك", "x": 480, "y": 601, "group": "bottom", "row": 21}, {"text": "Ich liebe dich", "x": 198, "y": 211, "group": "bottom", "row": 6}, {"text": "أنا أحبك", "x": 312, "y": 211, "group": "bottom", "row": 6}, {"text": "Kocham cię", "x": 427, "y": 211, "group": "bottom", "row": 6}, {"text": "Ik hou van jou", "x": 541, "y": 211, "group": "bottom", "row": 6}, {"text": "أحبك", "x": 656, "y": 211, "group": "bottom", "row": 6}, {"text": "I love you", "x": 770, "y": 211, "group": "bottom", "row": 6}, {"text": "Я тебе кохаю", "x": 183, "y": 237, "group": "bottom", "row": 7}, {"text": "Ti amo", "x": 297, "y": 237, "group": "bottom", "row": 7}, {"text": "بحبك", "x": 410, "y": 237, "group": "bottom", "row": 7}, {"text": "Je t'aime", "x": 524, "y": 237, "group": "bottom", "row": 7}, {"text": "我爱你", "x": 638, "y": 237, "group": "bottom", "row": 7}, {"text": "Anh yêu em", "x": 752, "y": 237, "group": "bottom", "row": 7}, {"text": "Я тебя люблю", "x": 230, "y": 263, "group": "bottom", "row": 8}, {"text": "Je t'aime", "x": 354, "y": 263, "group": "bottom", "row": 8}, {"text": "أعشقك", "x": 478, "y": 263, "group": "bottom", "row": 8}, {"text": "Σ' αγαπώ", "x": 601, "y": 263, "group": "bottom", "row": 8}, {"text": "Ik hou van jou", "x": 724, "y": 263, "group": "bottom", "row": 8}, {"text": "Te amo", "x": 217, "y": 289, "group": "bottom", "row": 9}, {"text": "Σ' αγαπώ", "x": 319, "y": 289, "group": "bottom", "row": 9}, {"text": "愛してる", "x": 420, "y": 289, "group": "bottom", "row": 9}, {"text": "أنا أحبك", "x": 522, "y": 289, "group": "bottom", "row": 9}, {"text": "Ik hou van jou", "x": 623, "y": 289, "group": "bottom", "row": 9}, {"text": "بحبك", "x": 725, "y": 289, "group": "bottom", "row": 9}, {"text": "Jag älskar dig", "x": 250, "y": 315, "group": "bottom", "row": 10}, {"text": "I love you", "x": 362, "y": 315, "group": "bottom", "row": 10}, {"text": "بحبك", "x": 475, "y": 315, "group": "bottom", "row": 10}, {"text": "Te amo", "x": 587, "y": 315, "group": "bottom", "row": 10}, {"text": "Eu te amo", "x": 699, "y": 315, "group": "bottom", "row": 10}, {"text": "ฉันรักเธอ", "x": 263, "y": 341, "group": "bottom", "row": 11}, {"text": "I love you", "x": 364, "y": 341, "group": "bottom", "row": 11}, {"text": "أحبك", "x": 466, "y": 341, "group": "bottom", "row": 11}, {"text": "Je t'aime", "x": 567, "y": 341, "group": "bottom", "row": 11}, {"text": "Ti amo", "x": 669, "y": 341, "group": "bottom", "row": 11}, {"text": "Aku cinta kamu", "x": 306, "y": 367, "group": "bottom", "row": 12}, {"text": "Te amo", "x": 418, "y": 367, "group": "bottom", "row": 12}, {"text": "أعشقك", "x": 530, "y": 367, "group": "bottom", "row": 12}, {"text": "Σ' αγαπώ", "x": 642, "y": 367, "group": "bottom", "row": 12}, {"text": "Ti amo", "x": 355, "y": 393, "group": "bottom", "row": 13}, {"text": "أنا أحبك", "x": 476, "y": 393, "group": "bottom", "row": 13}, {"text": "Ich liebe dich", "x": 598, "y": 393, "group": "bottom", "row": 13}, {"text": "Eu te amo", "x": 421, "y": 419, "group": "bottom", "row": 14}, {"text": "بحبك", "x": 545, "y": 419, "group": "bottom", "row": 14}, {"text": "我爱你", "x": 420, "y": 445, "group": "bottom", "row": 15}, {"text": "أحبك", "x": 525, "y": 445, "group": "bottom", "row": 15}, {"text": "أنا أحبك", "x": 487, "y": 471, "group": "bottom", "row": 16}, {"text": "بحبك", "x": 485, "y": 497, "group": "bottom", "row": 17}, {"text": "Ti amo", "x": 480, "y": 523, "group": "bottom", "row": 18}];
 
     const stage = document.getElementById("heartStage");
     const audio = document.getElementById("bgMusic");
+    const overlay = document.getElementById("tapOverlay");
+    const tapError = document.getElementById("tapError");
+    const soundBtn = document.getElementById("soundBtn");
+    let heartStarted = false;
+    let audioUnlocked = false;
 
-    // Responsive scaling to fit any viewport
+    // Responsive scaling to fit any viewport (incl. mobile browser chrome).
+    // Uses visualViewport when available so rotation / URL-bar show-hide recenters.
+    function viewportSize() {
+      const vv = window.visualViewport;
+      if (vv && vv.width > 0 && vv.height > 0) {
+        return { w: vv.width, h: vv.height };
+      }
+      return {
+        w: document.documentElement.clientWidth || window.innerWidth,
+        h: document.documentElement.clientHeight || window.innerHeight
+      };
+    }
     function updateScale() {
-      const scaleX = (window.innerWidth * 0.95) / 960;
-      const scaleY = (window.innerHeight * 0.95) / 720;
+      const { w, h } = viewportSize();
+      const margin = w < 600 ? 0.98 : 0.95; // use almost full width on phones
+      const scaleX = (w * margin) / 960;
+      const scaleY = (h * margin) / 720;
       const scale = Math.min(scaleX, scaleY, 1.25);
       stage.style.setProperty("--scale", scale);
     }
     window.addEventListener("resize", updateScale);
+    window.addEventListener("orientationchange", updateScale);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateScale);
+    }
     updateScale();
 
-    // Start audio immediately on load
+    function showAudioError(msg) {
+      if (!tapError) return;
+      tapError.hidden = false;
+      tapError.textContent = msg;
+    }
+
+    // Mobile browsers (iOS Safari / Android Chrome) only allow audio with
+    // the correct container + inside a user gesture. Attempt autoplay for
+    // desktop, but the overlay tap is the reliable path on phones.
+    function playAudio() {
+      if (!audio || audioUnlocked) return Promise.resolve();
+      return audio.play().then(() => {
+        audioUnlocked = true;
+        updateSoundBtn();
+      }).catch((err) => {
+        throw err;
+      });
+    }
+
+    function updateSoundBtn() {
+      if (!soundBtn || !audio) return;
+      soundBtn.hidden = false;
+      soundBtn.textContent = (audio.muted || audio.paused) ? "\uD83D\uDD07" : "\u266B";
+      soundBtn.setAttribute("aria-label", audio.paused ? "Play sound" : "Mute sound");
+    }
+
+    // Best-effort desktop autoplay; mobile will fall through to the overlay.
     function initAudio() {
       if (!audio) return;
-      audio.play().catch(() => {
-        // Silent fallback for strict browser autoplay policies
+      audio.load();
+      playAudio().catch(() => {
         const unlock = () => {
-          audio.play().catch(() => {});
+          playAudio().catch(() => {});
           window.removeEventListener("pointerdown", unlock);
+          window.removeEventListener("touchend", unlock);
           window.removeEventListener("keydown", unlock);
         };
-        window.addEventListener("pointerdown", unlock, { once: true });
-        window.addEventListener("keydown", unlock, { once: true });
+        window.addEventListener("pointerdown", unlock);
+        window.addEventListener("touchend", unlock);
+        window.addEventListener("keydown", unlock);
       });
+      audio.addEventListener("error", () => {
+        showAudioError("Music file could not play on this device. Tap again to retry.");
+      }, { once: true });
+    }
+
+    function dismissOverlay() {
+      if (overlay) overlay.hidden = true;
     }
 
     // Create words and animate immediately on page load
@@ -145,15 +285,56 @@
       });
     }
 
-    // Run automatically on load or immediately if already loaded
+    function startExperience() {
+      if (heartStarted) return;
+      heartStarted = true;
+      dismissOverlay();
+      initHeart();
+      playAudio().catch(() => {
+        // Keep the heart animating even if audio is blocked (e.g. silent switch).
+        updateSoundBtn();
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener("click", startExperience);
+      // touchend fires faster than click on old mobile browsers
+      overlay.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        startExperience();
+      }, { passive: false });
+    }
+
+    if (soundBtn) {
+      soundBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!audio) return;
+        if (audio.paused) {
+          playAudio().catch(() => showAudioError("Tap again — audio is still blocked."));
+        } else {
+          audio.muted = !audio.muted;
+        }
+        updateSoundBtn();
+      });
+    }
+
+    // Resume music when returning to the tab (mobile browsers often pause it).
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && heartStarted && audio && audioUnlocked && audio.paused) {
+        audio.play().catch(() => {});
+      }
+    });
+
+    // Boot: prepare audio + layout immediately, start animation on tap.
+    // If autoplay succeeds (desktop), hide the overlay and play at once.
     if (document.readyState === "loading") {
       window.addEventListener("DOMContentLoaded", () => {
         initAudio();
-        initHeart();
+        playAudio().then(startExperience).catch(() => {});
       });
     } else {
       initAudio();
-      initHeart();
+      playAudio().then(startExperience).catch(() => {});
     }
   </script>
 </body>
